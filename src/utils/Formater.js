@@ -52,6 +52,8 @@ export const Formater = async (file) => {
       cep: { maxLength: 8, numeric: true, padStart: true },
     }
 
+    const EXTRA_COLUMN_MAX_LENGTH = 100
+
     const ensureAllColumns = (row) => {
       const fullRow = { ...row }
       for (const col of REQUIRED_COLUMNS) {
@@ -62,27 +64,43 @@ export const Formater = async (file) => {
       return fullRow
     }
 
-    // 3. Funções auxiliares
     const normalizeRowKeys = (row) => {
-      return Object.keys(row).reduce(
-        (acc, key) => {
-          if (key === '__rowNum__') return acc
-          const normalizedKey = normalizeString(sanitizeString(key), true)
-          const rawValue = row[key]
-          const sanitizedValue = sanitizeString(rawValue)
-          const normalizedValue = normalizeString(sanitizedValue, false)
-          acc[normalizedKey] = normalizedValue
-          return acc
-        },
-        { row: row.__rowNum__ != null ? row.__rowNum__ + 1 : null }
-      )
+      return Object.keys(row).reduce((acc, key) => {
+        if (key === '__rowNum__') return acc
+        const normalizedKey = normalizeString(sanitizeString(key), true)
+        const rawValue = row[key]
+        const sanitizedValue = sanitizeString(rawValue)
+        const normalizedValue = normalizeString(sanitizedValue, false)
+        acc[normalizedKey] = normalizedValue
+        return acc
+      }, {})
     }
 
     const validateRequiredColumns = (headers) => {
       const normalizedHeaders = headers.map((header) =>
         normalizeString(sanitizeString(header), true)
       )
-      return REQUIRED_COLUMNS.filter((col) => !normalizedHeaders.includes(col))
+
+      const missing = REQUIRED_COLUMNS.filter(
+        (col) => !normalizedHeaders.includes(col)
+      )
+
+      const extraColumns = normalizedHeaders.filter(
+        (col) => !REQUIRED_COLUMNS.includes(col)
+      )
+
+      const duplicateExtras = extraColumns.filter(
+        (item, idx) => extraColumns.indexOf(item) !== idx
+      )
+
+      if (duplicateExtras.length > 0) {
+        return {
+          missing,
+          error: `Colunas extras duplicadas detectadas: ${duplicateExtras.join(', ')}`,
+        }
+      }
+
+      return { missing, error: null }
     }
 
     const validateRow = (row) => {
@@ -96,13 +114,12 @@ export const Formater = async (file) => {
         }
       }
 
-      // Verificar restrições dos campos
+      // Verificar restrições dos campos definidos
       for (const [field, constraints] of Object.entries(FIELD_CONSTRAINTS)) {
         if (!(field in row)) continue
 
         let value = String(row[field] ?? '')
 
-        // Tratamento especial para o campo 'numero'
         if (field === 'numero') {
           const rawNumero = value.toLowerCase()
           if (!rawNumero || ['s/n', 'sn'].includes(rawNumero)) {
@@ -141,28 +158,49 @@ export const Formater = async (file) => {
         value = value.slice(0, constraints.maxLength)
         row[field] = value
 
-        // Validação adicional de CEP
         if (field === 'cep' && value.length !== 8) {
           errors.push(`CEP com comprimento inválido: ${value}`)
+        }
+      }
+
+      // Validação de colunas extras
+      for (const key of Object.keys(row)) {
+        if (
+          !REQUIRED_COLUMNS.includes(key) &&
+          key !== 'row' &&
+          !key.startsWith('__')
+        ) {
+          const value = String(row[key] ?? '')
+          if (value.length > EXTRA_COLUMN_MAX_LENGTH) {
+            errors.push(
+              `Campo extra "${key}" excede ${EXTRA_COLUMN_MAX_LENGTH} caracteres`
+            )
+          }
         }
       }
 
       return errors.length === 0 ? null : errors
     }
 
-    // 4. Processamento principal
-    // Verificar colunas obrigatórias ausentes
-    const missingColumns = validateRequiredColumns(headers)
-    if (missingColumns.length > 0) {
+    // 3. Verificar colunas obrigatórias e erros de duplicidade
+    const { missing, error: columnError } = validateRequiredColumns(headers)
+    if (missing.length > 0 || columnError) {
       return {
         status: 'nok',
-        message: `Colunas obrigatórias ausentes: ${missingColumns.join(', ')}`,
+        message: [
+          missing.length > 0
+            ? `Colunas obrigatórias ausentes: ${missing.join(' | ')}`
+            : null,
+          columnError,
+        ]
+          .filter(Boolean)
+          .join(' | '),
         dataValid: [],
         dataInvalid: [],
       }
     }
 
-    // Normalizar e validar dados
+    // 4. Normalizar e validar dados
     const result = {
       dataValid: [],
       dataInvalid: [],
@@ -176,35 +214,31 @@ export const Formater = async (file) => {
         const completeRow = ensureAllColumns(row)
         result.dataInvalid.push({
           ...completeRow,
-          __errors: validationErrors,
-          __row: row.row,
+          errors: validationErrors.join(' | '),
         })
       } else {
         result.dataValid.push(row)
       }
     }
 
-    // Validar os CEPs
+    // 5. Validar os CEPs
     const uniqueCeps = [
       ...new Set(result.dataValid.map((row) => row['cep']).filter(Boolean)),
     ]
     const cepValidation = await CepValidator(uniqueCeps)
 
-    // Validar CEPs nos dados válidos
     const invalidCeps = cepValidation
       .filter((res) => res.valid === false)
       .map((res) => res.cep)
 
     if (invalidCeps.length > 0) {
       const invalidCepsSet = new Set(invalidCeps)
-      // Mover linhas com CEP inválido para inválidas
       result.dataValid = result.dataValid.filter((row) => {
         if (invalidCepsSet.has(row['cep'])) {
           const completeRow = ensureAllColumns(row)
           result.dataInvalid.push({
             ...completeRow,
-            __errors: ['CEP inválido'],
-            __row: row.row,
+            errors: 'CEP inválido',
           })
           return false
         }
@@ -212,11 +246,13 @@ export const Formater = async (file) => {
       })
     }
 
+    // 6. Retorno final
     return {
       status: 'ok',
       message: `Processadas ${result.dataValid.length} linhas válidas e ${result.dataInvalid.length} inválidas`,
       ...result,
       ceps: cepValidation,
+      REQUIRED_COLUMNS,
     }
   } catch (error) {
     console.error('Erro no Formater:', error)
