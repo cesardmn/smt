@@ -155,7 +155,7 @@ const Help = () => {
         <FaQuestionCircle />
         Em caso de dúvidas
         <a
-          href="docs/02_Manual_do_Usuário_-_SMT_2.8_-_Telegrama.pdf"
+          href="docs/02_Manual_do_Usuário_-_SMT_2.27_-_Telegrama.pdf"
           className="text-or-1 hover:underline"
         >
           consulte o manual.
