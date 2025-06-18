@@ -4,7 +4,7 @@ const Footer = () => {
       <div className="max-w-6xl mx-auto flex flex-col items-center gap-2 text-center sm:flex-row sm:justify-center">
         <p className="text-xs">
           &copy; {new Date().getFullYear()}{' '}
-          <span className="font-semibold">SMT</span>. Todos os direitos
+          <span className="font-semibold">autoflux</span>. Todos os direitos
           reservados.
         </p>
       </div>

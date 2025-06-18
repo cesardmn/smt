@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import logo from '../assets/img/icon.svg'
+import logo from '../assets/img/htd.svg'
 import { BsLinkedin, BsGithub } from 'react-icons/bs'
 
 const Navbar = () => {
@@ -25,9 +25,16 @@ const Navbar = () => {
 
 const NavbarLogo = () => (
   <div className="flex items-center gap-3">
-    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gradient-orange">
-      SMT - Formater
-    </h1>
+    <a
+      href="https://autoflux.app.br/"
+      className="hover:text-or-1 cursor-pointer"
+      aria-label="Site do AutoFlux"
+    >
+      {' '}
+      <div className="h-10 w-auto overflow-hidden flex items-center justify-center text-bk-1 font-bold text-lg select-none">
+        <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+      </div>
+    </a>
   </div>
 )
 
@@ -57,21 +64,6 @@ const NavbarLinks = ({ className = '' }) => (
         aria-label="LinkedIn"
       >
         <BsLinkedin />
-      </a>
-    </li>
-
-    <li className="hover:text-or-1 cursor-pointer">
-      <a
-        href="https://autoflux.app.br/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="hover:text-or-1 cursor-pointer"
-        aria-label="Site do AutoFlux"
-      >
-        {' '}
-        <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-bk-1 font-bold text-lg select-none">
-          <img src={logo} alt="Logo" className="w-full h-full object-cover" />
-        </div>
       </a>
     </li>
   </ul>
