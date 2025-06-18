@@ -36,9 +36,7 @@ export const Actions = () => {
         dragActive={dragActive}
       />
 
-      <div className="w-full text-left bg-bk-1 text-gr-2 p-6 rounded-lg shadow-md">
-        <LogViewer logs={log} loading={loading} />
-      </div>
+      <LogViewer logs={log} loading={loading} />
 
       {downloadData && <DownloadButton onClick={handleDownloadClick} />}
     </section>
