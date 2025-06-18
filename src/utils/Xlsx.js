@@ -37,12 +37,50 @@ export const Xlsx = (() => {
     } catch (error) {
       return {
         status: 'nok',
-        message: `Erro aoprocessar arquivo. ${error}`,
+        message: `Erro ao processar arquivo. ${error.message}`,
+      }
+    }
+  }
+
+  const writeXLSX = (data = [], filename = 'arquivo.xlsx') => {
+    try {
+      if (!Array.isArray(data) || data.length === 0) {
+        return {
+          status: 'nok',
+          message: 'Dados inválidos para exportação',
+          file: null,
+        }
+      }
+
+      const worksheet = xlsx.utils.json_to_sheet(data)
+      const workbook = xlsx.utils.book_new()
+      xlsx.utils.book_append_sheet(workbook, worksheet, 'Planilha1')
+
+      const wbout = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'array',
+      })
+
+      const blob = new Blob([wbout], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+
+      return {
+        status: 'ok',
+        message: `Arquivo XLSX "${filename}" gerado com sucesso.`,
+        file: blob,
+      }
+    } catch (error) {
+      return {
+        status: 'nok',
+        message: `Erro ao gerar arquivo XLSX: ${error.message}`,
+        file: null,
       }
     }
   }
 
   return {
     readerXLSX,
+    writeXLSX,
   }
 })()
