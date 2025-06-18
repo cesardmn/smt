@@ -19,11 +19,17 @@ export const CsvGenerator = async (data, REQUIRED_COLUMNS) => {
     const MAX_LINES = 200
 
     const encodeCsvLine = (item) => {
-      return Object.entries(item)
-        .map(([key, value]) =>
-          REQUIRED_COLUMNS.includes(key) ? `${value}` : `${key}:${value}`
-        )
-        .join(';')
+      // 1. Garantir ordem dos campos obrigatórios
+      const requiredValues = REQUIRED_COLUMNS.map((col) =>
+        col in item ? item[col] : ''
+      )
+
+      // 2. Adicionar campos extras ao final
+      const extraValues = Object.keys(item)
+        .filter((key) => !REQUIRED_COLUMNS.includes(key))
+        .map((key) => `${key}:${item[key] ?? ''}`)
+
+      return [...requiredValues, ...extraValues].join(';')
     }
 
     const allLines = data.map(encodeCsvLine)
@@ -33,7 +39,7 @@ export const CsvGenerator = async (data, REQUIRED_COLUMNS) => {
       const chunkLines = allLines.slice(i, i + MAX_LINES)
       const content = chunkLines.join('\n')
       const filename = `dados_validos_parte_${chunks.length + 1}.csv`
-      const blob = new Blob([content], { type: 'text/csv' })
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8' })
       chunks.push({ name: filename, blob })
     }
 
