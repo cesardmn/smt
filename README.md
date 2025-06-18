@@ -21,7 +21,7 @@ O **SMT Formater** é uma aplicação web que automatiza a preparação de arqui
    [template_modelo_smt.xlsx](public/docs/template_modelo_smt.xlsx)
 2. **Preencha os dados conforme instruções do modelo.**
 3. **Faça upload do arquivo `.xlsx` na interface web.**
-4. **Aguarde o processamento e baixe os arquivos gerados:**  
+4. **Aguarde o processamento e baixe os arquivos gerados:**
    - Arquivos `.csv` válidos (em partes de até 200 registros)
    - Arquivo `.xlsx` com registros inválidos (se houver)
 
