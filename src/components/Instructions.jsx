@@ -48,7 +48,7 @@ const Features = () => {
     <div className="bg-bk-1 p-6 rounded-lg border-r-4 border-or-1 shadow-lg mb-6">
       <h3 className="text-xl font-semibold text-wt-1 mb-3 flex items-center gap-2">
         <FaCog className="text-or-1" />
-        Main Features
+        Funcionalidades
       </h3>
       <ul className="space-y-3">
         {features.map(({ title, text }, i) => (
