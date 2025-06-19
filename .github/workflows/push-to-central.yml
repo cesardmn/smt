@@ -1,0 +1,34 @@
+name: Deploy para autoflux
+
+on:
+  push:
+    branches: [main] # Ou outra branch onde você faz os builds
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências e buildar
+        run: |
+          npm install
+          npm run build
+
+      - name: Clonar branch main do repositório autoflux
+        run: |
+          git clone --branch=main https://x-access-token:${{ secrets.AUTOFLUX_REPO_PAT }}@github.com/cesardmn/autoflux.git autoflux
+
+      - name: Copiar arquivos buildados para o repositório autoflux
+        run: |
+          rm -rf autoflux/smt/*
+          cp -r dist/* autoflux/smt/
+          cd autoflux
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add smt
+          git commit -m "Atualiza app1 via GitHub Actions" || echo "Nada para commitar"
+          git push origin main
